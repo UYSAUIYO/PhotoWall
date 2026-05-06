@@ -1,8 +1,27 @@
 @import "tailwindcss";
 
+/* ── 液态玻璃色彩系统 ── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F2F2F7;
+  --foreground: #1C1C1E;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --accent: #007AFF;
+  --accent-light: rgba(0, 122, 255, 0.15);
+  --card-radius: 12px;
+  --nav-height: 56px;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #F5F5F7;
+  --glass-bg: rgba(30, 30, 32, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-bg-strong: rgba(44, 44, 46, 0.9);
+  --accent: #0A84FF;
+  --accent-light: rgba(10, 132, 255, 0.2);
 }
 
 @theme inline {
@@ -12,15 +31,142 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ── 全局基础 ── */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 背景微弱的点阵纹理 —— 让玻璃面板有内容可模糊 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--foreground) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.03;
+}
+
+/* ── 液态玻璃工具类 ── */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+}
+
+.glass-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--glass-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 0.5px solid var(--glass-border);
+  height: var(--nav-height);
+}
+
+/* ── 照片网格 ── */
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px;
+  padding: 4px;
+}
+
+.photo-masonry {
+  column-count: 4;
+  column-gap: 4px;
+  padding: 4px;
+}
+
+.photo-masonry > * {
+  break-inside: avoid;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 1200px) { .photo-masonry { column-count: 3; } }
+@media (max-width: 768px)  { .photo-masonry { column-count: 2; } .photo-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
+@media (max-width: 480px)  { .photo-masonry { column-count: 2; } .photo-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); } }
+
+/* ── 照片卡片 ── */
+
+.photo-card {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.3s ease-out, filter 0.3s ease-out;
+}
+
+.photo-card:hover {
+  transform: scale(1.03);
+  filter: brightness(1.05);
+}
+
+.photo-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Grid 模式下正方形裁剪 ── */
+
+.photo-grid .photo-card {
+  aspect-ratio: 1;
+}
+
+/* ── 灯箱动画 ── */
+
+@keyframes lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lightbox-image-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lightbox-overlay {
+  animation: lightbox-in 0.3s ease-out;
+}
+
+.lightbox-image {
+  animation: lightbox-image-in 0.35s ease-out;
+}
+
+/* ── 滚动条 ── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.6);
 }
