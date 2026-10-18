@@ -1,21 +1,25 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import Icon from '@/components/ui/Icon';
 
 interface UploadZoneProps {
   onFiles: (files: File[]) => void;
 }
 
 export default function UploadZone({ onFiles }: UploadZoneProps) {
+  const [error, setError] = useState('');
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      setError('');
       if (acceptedFiles.length > 0) onFiles(acceptedFiles);
     },
     [onFiles]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
@@ -24,31 +28,51 @@ export default function UploadZone({ onFiles }: UploadZoneProps) {
       'image/gif': ['.gif'],
     },
     maxSize: 10 * 1024 * 1024,
+    multiple: true,
   });
 
+  const rejected = fileRejections.length > 0;
+
   return (
-    <div
-      {...getRootProps()}
-      className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-        isDragActive
-          ? 'border-[var(--accent)] bg-[var(--accent-light)]'
-          : 'border-foreground/15 hover:border-foreground/30 hover:bg-foreground/[0.02]'
-      }`}
-    >
-      <input {...getInputProps()} />
-      <svg
-        className="w-10 h-10 mx-auto mb-3 text-foreground/30"
-        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+    <div>
+      <div
+        {...getRootProps()}
+        className={`group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-[24px] border border-dashed px-5 py-6 text-center transition-all duration-300 sm:flex-row sm:text-left ${
+          isDragActive
+            ? 'border-[var(--accent)] bg-[var(--accent-light)]'
+            : 'border-[var(--hairline-strong)] bg-[var(--surface)] hover:border-foreground/25 hover:bg-[var(--field-bg)]'
+        }`}
       >
-        <path
-          strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-        />
-      </svg>
-      <p className="text-sm text-foreground/60">
-        {isDragActive ? '释放以上传' : '拖拽照片到这里，或点击选择'}
-      </p>
-      <p className="text-xs text-foreground/30 mt-1">支持 JPG / PNG / WebP / GIF，最大 10MB</p>
+        <input {...getInputProps()} aria-label="选择照片文件" />
+        <span
+          className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border transition-colors ${
+            isDragActive
+              ? 'border-[var(--accent)]/30 bg-[var(--accent)] text-white'
+              : 'border-[var(--hairline)] bg-[var(--field-bg)] text-muted group-hover:text-foreground'
+          }`}
+        >
+          <Icon name="upload" size={19} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] font-medium">
+            {isDragActive ? '松开鼠标，开始上传' : '拖拽照片到这里'}
+          </p>
+          <p className="mt-1 text-[11.5px] leading-relaxed text-subtle">
+            支持 JPG / PNG / WebP / GIF，单张最大 10MB
+          </p>
+        </div>
+        <span className="btn btn-glass btn-sm pointer-events-none !h-9 shrink-0">
+          <Icon name="image" size={14} />
+          选择文件
+        </span>
+      </div>
+
+      {(error || rejected) && (
+        <p className="mt-2 px-1 text-[11.5px] text-[var(--danger)]">
+          {error ||
+            '部分文件未能添加：仅支持 JPG / PNG / WebP / GIF，且单张不能超过 10MB。'}
+        </p>
+      )}
     </div>
   );
 }

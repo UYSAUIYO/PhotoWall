@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import Avatar from '@/components/ui/Avatar';
+import Icon from '@/components/ui/Icon';
 
 export default function UserMenu() {
   const { data: session } = useSession();
@@ -10,75 +12,115 @@ export default function UserMenu() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
+
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
 
   if (!session?.user) {
     return (
-      <Link
-        href="/auth/login"
-        className="px-4 py-2 rounded-full bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 transition"
-      >
+      <Link href="/auth/login" className="btn btn-primary btn-sm h-9 !px-4">
+        <Icon name="user" size={15} />
         登录
       </Link>
     );
   }
 
-  const role = (session.user as any).role;
+  const role = (session.user as { role?: string }).role;
 
   return (
     <div ref={menuRef} className="relative">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full glass hover:bg-[var(--glass-bg-strong)] transition"
+        className="flex items-center gap-2 rounded-full border border-transparent p-0.5 pr-1 transition hover:border-[var(--edge)] hover:bg-[var(--hover)] sm:pl-1"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="账户菜单"
       >
-        <div className="w-7 h-7 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xs font-bold">
-          {session.user.name?.charAt(0).toUpperCase() || 'U'}
-        </div>
-        <span className="text-sm font-medium max-w-[100px] truncate hidden sm:block">
+        <Avatar name={session.user.name} size={30} />
+        <span className="hidden max-w-[110px] truncate text-[13px] font-medium sm:block">
           {session.user.name}
         </span>
+        <Icon
+          name="chevronDown"
+          size={14}
+          className={`hidden text-subtle transition-transform duration-300 sm:block ${
+            open ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-48 glass-strong p-1.5 space-y-0.5 z-50">
-          <div className="px-3 py-2 text-xs text-foreground/50 border-b border-foreground/10 mb-1">
-            {session.user.email}
-            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent)] text-xs">
+        <div
+          role="menu"
+          className="menu absolute right-0 top-[calc(100%+10px)] z-50 w-[268px] p-2"
+        >
+          <div className="flex items-center gap-3 rounded-2xl bg-[var(--field-bg)] p-3">
+            <Avatar name={session.user.name} size={38} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13.5px] font-semibold">{session.user.name}</p>
+              <p className="mt-0.5 truncate text-[11px] text-subtle">{session.user.email}</p>
+            </div>
+            <span
+              className={`shrink-0 rounded-full px-2 py-[3px] text-[10px] font-medium ${
+                role === 'admin'
+                  ? 'bg-[var(--accent-light)] text-[var(--accent)]'
+                  : 'bg-[var(--hover)] text-muted'
+              }`}
+            >
               {role === 'admin' ? '管理员' : '用户'}
             </span>
           </div>
 
-          <Link
-            href="/dashboard"
-            onClick={() => setOpen(false)}
-            className="block px-3 py-2 rounded-lg text-sm hover:bg-foreground/5 transition"
-          >
-            个人空间
-          </Link>
-
-          {role === 'admin' && (
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm hover:bg-foreground/5 transition"
-            >
-              管理后台
+          <div className="mt-2 space-y-0.5">
+            <Link href="/dashboard" onClick={() => setOpen(false)} className="menu-item" role="menuitem">
+              <Icon name="images" size={16} />
+              个人空间
             </Link>
-          )}
+            <Link
+              href="/dashboard/photos"
+              onClick={() => setOpen(false)}
+              className="menu-item"
+              role="menuitem"
+            >
+              <Icon name="upload" size={16} />
+              上传照片
+            </Link>
+            {role === 'admin' && (
+              <Link href="/admin" onClick={() => setOpen(false)} className="menu-item" role="menuitem">
+                <Icon name="shield" size={16} />
+                管理后台
+              </Link>
+            )}
+          </div>
 
-          <hr className="border-foreground/10 my-1" />
+          <div className="my-1.5 h-px bg-[var(--hairline)]" />
 
           <button
-            onClick={() => { setOpen(false); signOut(); }}
-            className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-500/5 transition"
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              signOut();
+            }}
+            className="menu-item !text-[var(--danger)] hover:!bg-[var(--danger-bg)]"
+            role="menuitem"
           >
+            <Icon name="logout" size={16} />
             退出登录
           </button>
         </div>

@@ -1,59 +1,40 @@
 'use client';
 
-import { formatFileSize } from '@/lib/utils';
+import Icon, { type IconName } from '@/components/ui/Icon';
+
+type StatIcon = 'photos' | 'public' | 'private' | 'size' | 'users' | 'admin';
+
+const iconMap: Record<StatIcon, IconName> = {
+  photos: 'images',
+  public: 'globe',
+  private: 'lock',
+  size: 'hardDrive',
+  users: 'users',
+  admin: 'shield',
+};
 
 interface StatsCardProps {
-  icon: 'photos' | 'public' | 'private' | 'size';
+  icon: StatIcon;
   label: string;
   value: string | number;
+  hint?: string;
 }
 
-function Icon({ name }: { name: string }) {
-  switch (name) {
-    case 'photos':
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" />
-        </svg>
-      );
-    case 'public':
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="2" y1="12" x2="22" y2="12" />
-          <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
-        </svg>
-      );
-    case 'private':
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-      );
-    case 'size':
-      return (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
-
-export default function StatsCard({ icon, label, value }: StatsCardProps) {
+export default function StatsCard({ icon, label, value, hint }: StatsCardProps) {
   return (
-    <div className="glass p-4 rounded-2xl flex items-center gap-4">
-      <div className="w-10 h-10 rounded-xl bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent)]">
-        <Icon name={icon} />
+    <div className="group relative overflow-hidden rounded-[22px] border border-[var(--hairline)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-md transition-all duration-500 hover:-translate-y-0.5 hover:border-[var(--hairline-strong)] hover:shadow-[var(--shadow-md)]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-subtle">
+          {label}
+        </span>
+        <span className="grid h-9 w-9 place-items-center rounded-xl border border-[var(--hairline)] bg-[var(--field-bg)] text-muted transition-colors duration-300 group-hover:text-foreground">
+          <Icon name={iconMap[icon]} size={17} strokeWidth={1.7} />
+        </span>
       </div>
-      <div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-foreground/50">{label}</p>
-      </div>
+      <p className="mt-5 text-[30px] font-semibold leading-none tracking-[-0.035em] tabular">
+        {value}
+      </p>
+      {hint && <p className="mt-2.5 text-[11.5px] leading-snug text-subtle">{hint}</p>}
     </div>
   );
 }

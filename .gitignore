@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# runtime uploads (keep the folder, ignore user content)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # vercel
 .vercel
 

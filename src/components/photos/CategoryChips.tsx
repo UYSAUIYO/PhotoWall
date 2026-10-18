@@ -7,33 +7,37 @@ interface CategoryChipsProps {
 }
 
 export default function CategoryChips({ categories, active, onSelect }: CategoryChipsProps) {
+  const total = categories.reduce((sum, item) => sum + item.count, 0);
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+    <div className="mask-fade-x no-scrollbar flex items-center gap-1 overflow-x-auto py-0.5">
       <button
+        type="button"
         onClick={() => onSelect(null)}
-        className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-          active === null
-            ? 'bg-[var(--accent)] text-white'
-            : 'glass text-foreground/70 hover:text-foreground'
-        }`}
+        data-active={active === null}
+        className="chip"
+        aria-pressed={active === null}
       >
         全部
+        <span className="chip-count">{total}</span>
       </button>
 
-      {categories.map(({ category, count }) => (
-        <button
-          key={category}
-          onClick={() => onSelect(category)}
-          className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-            active === category
-              ? 'bg-[var(--accent)] text-white'
-              : 'glass text-foreground/70 hover:text-foreground'
-          }`}
-        >
-          {category}
-          <span className="ml-1.5 text-xs opacity-60">{count}</span>
-        </button>
-      ))}
+      {categories.map(({ category, count }) => {
+        const isActive = active === category;
+        return (
+          <button
+            key={category}
+            type="button"
+            onClick={() => onSelect(category)}
+            data-active={isActive}
+            className="chip"
+            aria-pressed={isActive}
+          >
+            {category}
+            <span className="chip-count">{count}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

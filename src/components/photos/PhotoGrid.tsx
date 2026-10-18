@@ -1,7 +1,7 @@
 'use client';
 
 import PhotoCard from './PhotoCard';
-import type { Photo, LayoutMode } from '@/types';
+import type { LayoutMode, Photo } from '@/types';
 
 interface PhotoGridProps {
   photos: Photo[];
@@ -11,6 +11,7 @@ interface PhotoGridProps {
   onPhotoClick?: (photo: Photo) => void;
   selectMode?: boolean;
   showVisibility?: boolean;
+  empty?: React.ReactNode;
 }
 
 export default function PhotoGrid({
@@ -21,32 +22,50 @@ export default function PhotoGrid({
   onPhotoClick,
   selectMode = false,
   showVisibility = false,
+  empty,
 }: PhotoGridProps) {
   if (photos.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-foreground/40">
-        <svg className="w-16 h-16 mb-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        <p className="text-sm">还没有照片</p>
-      </div>
-    );
+    return <>{empty ?? null}</>;
   }
 
-  const isGrid = layoutMode === 'grid';
-  const className = isGrid ? 'photo-grid' : 'photo-masonry';
+  const className = layoutMode === 'grid' ? 'photo-grid' : 'photo-masonry';
 
   return (
-    <div className={className}>
-      {photos.map((photo) => (
+    <div className={className} data-count={photos.length}>
+      {photos.map((photo, index) => (
         <PhotoCard
           key={photo.id}
           photo={photo}
+          index={index}
+          layoutMode={layoutMode}
           selected={selectedIds?.has(photo.id)}
           onSelect={onSelect}
           onClick={onPhotoClick}
           selectMode={selectMode}
           showVisibility={showVisibility}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function PhotoGridSkeleton({
+  layoutMode = 'masonry',
+  count = 10,
+}: {
+  layoutMode?: LayoutMode;
+  count?: number;
+}) {
+  const ratios = [4 / 3, 3 / 4, 1, 4 / 3, 3 / 4, 1.2, 3 / 4, 4 / 3, 1, 0.8];
+  const isGrid = layoutMode === 'grid';
+
+  return (
+    <div className={isGrid ? 'photo-grid' : 'photo-masonry'} aria-hidden="true">
+      {Array.from({ length: count }).map((_, index) => (
+        <div
+          key={index}
+          className="photo-card skeleton !cursor-default"
+          style={{ aspectRatio: String(isGrid ? 1 : ratios[index % ratios.length]) }}
         />
       ))}
     </div>

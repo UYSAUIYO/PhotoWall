@@ -1,7 +1,10 @@
 'use client';
 
+import Icon from '@/components/ui/Icon';
+
 interface BatchToolbarProps {
   selectedCount: number;
+  active: boolean;
   onCancel: () => void;
   onDelete: () => void;
   onCategorize: () => void;
@@ -10,57 +13,81 @@ interface BatchToolbarProps {
 
 export default function BatchToolbar({
   selectedCount,
+  active,
   onCancel,
   onDelete,
   onCategorize,
   onSetVisibility,
 }: BatchToolbarProps) {
-  if (selectedCount === 0) return null;
+  if (!active) return null;
 
   return (
-    <div className="glass-strong flex items-center gap-2 px-4 py-2 sticky top-[var(--nav-height)] z-40">
-      <button
-        onClick={onCancel}
-        className="p-1.5 rounded-lg hover:bg-foreground/5 transition"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
-      </button>
+    <div className="fixed inset-x-0 bottom-5 z-[120] flex justify-center px-4 sm:bottom-7">
+      <div className="glass-strong anim-pop flex max-w-full items-center gap-1 rounded-full p-1.5 pl-2 shadow-[var(--shadow-lg)]">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition hover:bg-[var(--hover)] hover:text-foreground"
+          aria-label="退出选择"
+        >
+          <Icon name="x" size={15} />
+        </button>
 
-      <span className="text-sm font-medium">
-        已选 <span className="text-[var(--accent)]">{selectedCount}</span> 张
-      </span>
+        <span className="shrink-0 whitespace-nowrap px-1 text-[12.5px] font-medium">
+          {selectedCount > 0 ? (
+            <>
+              已选 <span className="tabular text-[var(--accent)]">{selectedCount}</span> 张
+            </>
+          ) : (
+            <span className="text-muted">选择照片</span>
+          )}
+        </span>
 
-      <div className="flex-1" />
+        <span className="mx-1 h-5 w-px shrink-0 bg-[var(--hairline)]" />
 
-      <button
-        onClick={onCategorize}
-        className="px-3 py-1.5 rounded-lg text-sm glass hover:bg-foreground/5 transition"
-      >
-        改分类
-      </button>
-
-      <button
-        onClick={() => onSetVisibility('public')}
-        className="px-3 py-1.5 rounded-lg text-sm glass hover:bg-foreground/5 transition"
-      >
-        设为公开
-      </button>
-
-      <button
-        onClick={() => onSetVisibility('private')}
-        className="px-3 py-1.5 rounded-lg text-sm glass hover:bg-foreground/5 transition"
-      >
-        设为私有
-      </button>
-
-      <button
-        onClick={onDelete}
-        className="px-3 py-1.5 rounded-lg text-sm bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
-      >
-        删除
-      </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={onCategorize}
+            disabled={selectedCount === 0}
+            className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-muted transition hover:bg-[var(--hover)] hover:text-foreground disabled:opacity-35 sm:px-3"
+            title="批量设置分类"
+          >
+            <Icon name="folder" size={14} />
+            <span className="hidden sm:inline">分类</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetVisibility('public')}
+            disabled={selectedCount === 0}
+            className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-muted transition hover:bg-[var(--hover)] hover:text-foreground disabled:opacity-35 sm:px-3"
+            title="设为公开"
+          >
+            <Icon name="globe" size={14} />
+            <span className="hidden sm:inline">公开</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onSetVisibility('private')}
+            disabled={selectedCount === 0}
+            className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-muted transition hover:bg-[var(--hover)] hover:text-foreground disabled:opacity-35 sm:px-3"
+            title="设为私有"
+          >
+            <Icon name="lock" size={14} />
+            <span className="hidden sm:inline">私有</span>
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={selectedCount === 0}
+            className="flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-[var(--danger)] transition hover:bg-[var(--danger-bg)] disabled:opacity-35 sm:px-3"
+            title="删除所选"
+          >
+            <Icon name="trash" size={14} />
+            <span className="hidden sm:inline">删除</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

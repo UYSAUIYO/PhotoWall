@@ -1,165 +1,287 @@
 'use client';
 
 import { useState } from 'react';
-import type { Photo } from '@/types';
-import { formatDate, parseTags, tagsToString } from '@/lib/utils';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import {
+  formatDateTime,
+  formatDimensions,
+  formatFileSize,
+  parseTags,
+} from '@/lib/utils';
+import type { Photo, PhotoVisibility } from '@/types';
+
+const PRESET_CATEGORIES = ['风景', '人物', '动物', '建筑', '美食', '其他'];
 
 interface InfoPanelProps {
   photo: Photo;
   editable?: boolean;
-  onSave?: (data: { title: string; description: string; category: string; tags: string; visibility: string }) => void;
+  onSave?: (data: {
+    title: string;
+    description: string;
+    category: string;
+    tags: string;
+    visibility: PhotoVisibility;
+  }) => void | Promise<void>;
   onDelete?: () => void;
 }
 
-const PRESET_CATEGORIES = ['风景', '人物', '动物', '建筑', '美食', '其他'];
-
 export default function InfoPanel({ photo, editable = false, onSave, onDelete }: InfoPanelProps) {
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [title, setTitle] = useState(photo.title);
   const [description, setDescription] = useState(photo.description || '');
   const [category, setCategory] = useState(photo.category);
-  const [tags, setTags] = useState(photo.tags);
-  const [visibility, setVisibility] = useState(photo.visibility);
+  const [tags, setTags] = useState(photo.tags || '');
+  const [visibility, setVisibility] = useState<PhotoVisibility>(photo.visibility);
 
-  function handleSave() {
-    onSave?.({ title, description, category, tags, visibility });
-    setEditing(false);
-  }
-
-  function handleCancel() {
+  function resetForm() {
     setTitle(photo.title);
     setDescription(photo.description || '');
     setCategory(photo.category);
-    setTags(photo.tags);
+    setTags(photo.tags || '');
     setVisibility(photo.visibility);
+    setError('');
+  }
+
+  function handleCancel() {
+    resetForm();
     setEditing(false);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError('');
+    try {
+      await onSave?.({ title, description, category, tags, visibility });
+      setEditing(false);
+    } catch {
+      setError('保存失败，请稍后重试。');
+    } finally {
+      setSaving(false);
+    }
   }
 
   const tagList = parseTags(editing ? tags : photo.tags);
 
-  return (
-    <div className="glass-strong p-4 space-y-3">
-      {editing ? (
-        <>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition"
-            placeholder="照片标题"
-          />
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition resize-none"
-            rows={2}
-            placeholder="描述..."
-          />
-          <div className="flex gap-1.5 flex-wrap">
-            {PRESET_CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`px-2.5 py-1 rounded-full text-xs transition ${
-                  category === cat
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'bg-black/5 dark:bg-white/10'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+  if (editing) {
+    return (
+      <div className="flex h-full flex-col">
+        <div className="flex items-center justify-between px-6 pb-2 pt-6">
+          <div>
+            <p className="eyebrow !text-white/40">Edit</p>
+            <h2 className="mt-1.5 text-[17px] font-semibold">编辑照片</h2>
           </div>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)] transition"
-            placeholder="标签（逗号分隔）"
-          />
-          <div className="flex gap-2">
-            {(['public', 'private'] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setVisibility(v)}
-                className={`px-3 py-1 rounded-full text-xs transition ${
-                  visibility === v
-                    ? v === 'public' ? 'bg-green-500/20 text-green-600' : 'bg-orange-500/20 text-orange-600'
-                    : 'bg-black/5 dark:bg-white/10'
-                }`}
-              >
-                {v === 'public' ? '公开' : '私有'}
-              </button>
-            ))}
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="grid h-8 w-8 place-items-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
+            aria-label="关闭编辑"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          {error && <Notice tone="error">{error}</Notice>}
+
+          <div>
+            <label htmlFor="info-title" className="field-label !text-white/50">
+              标题
+            </label>
+            <input
+              id="info-title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              className="field"
+              placeholder="给这张照片一个名字"
+            />
           </div>
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-1.5 rounded-lg text-sm glass hover:bg-foreground/5 transition"
-            >
-              取消
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-1.5 rounded-lg text-sm bg-[var(--accent)] text-white hover:opacity-90 transition"
-            >
-              保存
-            </button>
+
+          <div>
+            <label htmlFor="info-description" className="field-label !text-white/50">
+              描述
+            </label>
+            <textarea
+              id="info-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="field"
+              rows={3}
+              placeholder="记录下这一刻…"
+            />
           </div>
-        </>
-      ) : (
-        <>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg">{photo.title || '未命名'}</h3>
-            <div className="flex items-center gap-2">
-              {photo.visibility === 'private' && (
-                <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 text-xs">
-                  私有
-                </span>
-              )}
-              {editable && (
+
+          <div>
+            <label htmlFor="info-category" className="field-label !text-white/50">
+              分类
+            </label>
+            <input
+              id="info-category"
+              type="text"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              className="field"
+              placeholder="分类名称"
+            />
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {PRESET_CATEGORIES.map((item) => (
                 <button
-                  onClick={() => setEditing(true)}
-                  className="p-1.5 rounded-lg hover:bg-foreground/5 transition"
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={`chip !h-7 !px-3 !text-[11.5px] ${
+                    category === item
+                      ? '!bg-white !text-black'
+                      : '!bg-white/5 !text-white/60 hover:!bg-white/10 hover:!text-white'
+                  }`}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
+                  {item}
                 </button>
-              )}
+              ))}
             </div>
           </div>
 
-          {photo.description && (
-            <p className="text-sm text-foreground/60">{photo.description}</p>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-2 py-0.5 rounded-full bg-[var(--accent-light)] text-[var(--accent)] text-xs">
-              {photo.category || '其他'}
-            </span>
-            {tagList.map((t) => (
-              <span key={t} className="px-2 py-0.5 rounded-full glass text-xs text-foreground/60">
-                {t}
-              </span>
-            ))}
+          <div>
+            <label htmlFor="info-tags" className="field-label !text-white/50">
+              标签
+            </label>
+            <input
+              id="info-tags"
+              type="text"
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
+              className="field"
+              placeholder="用逗号分隔，例如：城市, 夜景"
+            />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-foreground/40">
-            <span>{photo.username}</span>
-            <span>{formatDate(photo.created_at)}</span>
+          <div>
+            <span className="field-label !text-white/50">可见性</span>
+            <div className="seg !bg-white/5 !border-white/10">
+              {(['public', 'private'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setVisibility(value)}
+                  data-active={visibility === value}
+                  className="seg-btn !text-white/60 data-[active=true]:!bg-white data-[active=true]:!text-black"
+                >
+                  <Icon name={value === 'public' ? 'globe' : 'lock'} size={13} />
+                  {value === 'public' ? '公开' : '私有'}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
 
-          {editable && onDelete && (
+        <div className="flex items-center gap-2 border-t border-white/10 px-6 py-4">
+          <button type="button" onClick={handleCancel} className="btn btn-glass btn-sm flex-1">
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-primary btn-sm flex-1"
+          >
+            {saving ? '保存中…' : '保存更改'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const meta = [
+    { label: '尺寸', value: formatDimensions(photo.width, photo.height) },
+    { label: '大小', value: formatFileSize(photo.file_size) },
+    { label: '上传者', value: photo.username || '—' },
+    { label: '上传时间', value: formatDateTime(photo.created_at) },
+  ];
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-y-auto px-6 pb-6 pt-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="eyebrow !text-white/40">Photo</p>
+            <h2 className="mt-2 text-[20px] font-semibold leading-snug tracking-[-0.015em] text-white">
+              {photo.title || '未命名'}
+            </h2>
+          </div>
+          {editable && (
             <button
-              onClick={onDelete}
-              className="text-xs text-red-400 hover:text-red-500 transition"
+              type="button"
+              onClick={() => setEditing(true)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/5 text-white/60 transition hover:bg-white/10 hover:text-white"
+              aria-label="编辑照片信息"
+              title="编辑"
             >
-              删除照片
+              <Icon name="pencil" size={15} />
             </button>
           )}
-        </>
+        </div>
+
+        <p className="mt-3 text-[13px] leading-relaxed text-white/55">
+          {photo.description || '这张照片还没有描述。'}
+        </p>
+
+        <div className="mt-5 flex flex-wrap items-center gap-1.5">
+          {photo.category && (
+            <span className="tag !border-white/10 !bg-white/5 !text-white/75">
+              <Icon name="folder" size={11} />
+              {photo.category}
+            </span>
+          )}
+          {photo.visibility === 'private' && (
+            <span className="tag !border-amber-400/20 !bg-amber-400/10 !text-amber-300">
+              <Icon name="lock" size={11} />
+              私有
+            </span>
+          )}
+          {tagList.map((tag) => (
+            <span key={tag} className="tag !border-white/10 !bg-white/5 !text-white/55">
+              #{tag}
+            </span>
+          ))}
+        </div>
+
+        <div className="my-6 h-px bg-white/10" />
+
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
+          {meta.map((item) => (
+            <div key={item.label}>
+              <dt className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/35">
+                {item.label}
+              </dt>
+              <dd className="mt-1.5 truncate text-[13px] text-white/80 tabular" title={item.value}>
+                {item.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <div className="mt-auto border-t border-white/10 px-6 py-4">
+        <p className="flex items-center gap-2 text-[9.5px] uppercase tracking-[0.16em] text-white/30">
+          <Icon name="shield" size={12} />
+          照片版权归上传者所有
+        </p>
+      </div>
+
+      {editable && onDelete && (
+        <div className="border-t border-white/10 px-6 py-4">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 py-2.5 text-[12.5px] font-medium text-red-300 transition hover:bg-red-500/20"
+          >
+            <Icon name="trash" size={14} />
+            删除这张照片
+          </button>
+        </div>
       )}
     </div>
   );

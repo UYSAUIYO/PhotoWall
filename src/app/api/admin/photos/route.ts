@@ -30,6 +30,14 @@ export async function GET(request: NextRequest) {
     );
     const total = (countRows as any[])[0].total;
 
+    const [statRows] = await pool.query(
+      `SELECT COUNT(*) AS total,
+              COALESCE(SUM(visibility = 'public'), 0) AS publicTotal,
+              COALESCE(SUM(file_size), 0) AS totalSize
+       FROM photos`
+    );
+    const stats = (statRows as any[])[0];
+
     const [rows] = await pool.query(
       `SELECT p.*, u.username, u.role as user_role FROM photos p
        JOIN users u ON p.user_id = u.id
@@ -46,6 +54,11 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      stats: {
+        total: Number(stats.total) || 0,
+        publicTotal: Number(stats.publicTotal) || 0,
+        totalSize: Number(stats.totalSize) || 0,
+      },
     });
   } catch (error) {
     console.error('GET /api/admin/photos error:', error);

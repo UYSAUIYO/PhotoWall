@@ -1,10 +1,14 @@
 'use client';
 
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { getPhotoUrl } from '@/lib/upload';
-import type { Photo } from '@/types';
+import Icon from '@/components/ui/Icon';
+import type { LayoutMode, Photo } from '@/types';
 
 interface PhotoCardProps {
   photo: Photo;
+  layoutMode?: LayoutMode;
+  index?: number;
   selected?: boolean;
   onSelect?: (id: number) => void;
   onClick?: (photo: Photo) => void;
@@ -14,6 +18,8 @@ interface PhotoCardProps {
 
 export default function PhotoCard({
   photo,
+  layoutMode = 'masonry',
+  index = 0,
   selected = false,
   onSelect,
   onClick,
@@ -21,46 +27,90 @@ export default function PhotoCard({
   showVisibility = false,
 }: PhotoCardProps) {
   const url = getPhotoUrl(photo.user_id, photo.filename);
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  function handleClick() {
-    if (selectMode && onSelect) {
-      onSelect(photo.id);
-    } else if (onClick) {
-      onClick(photo);
+  useEffect(() => {
+    if (imgRef.current?.complete) setLoaded(true);
+  }, []);
+
+  const rawRatio = photo.width && photo.height ? photo.width / photo.height : 4 / 3;
+  const ratio = layoutMode === 'grid' ? 1 : Math.min(2.4, Math.max(0.62, rawRatio));
+
+  function activate() {
+    if (selectMode && onSelect) onSelect(photo.id);
+    else onClick?.(photo);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      activate();
     }
   }
 
   return (
-    <div className="photo-card" onClick={handleClick}>
-      <img
-        src={url}
-        alt={photo.title}
-        loading="lazy"
-        className="w-full h-full object-cover"
-      />
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={activate}
+      onKeyDown={handleKeyDown}
+      className="photo-card anim-rise"
+      data-selected={selected}
+      style={{ aspectRatio: String(ratio), ['--i' as string]: index % 12 } as CSSProperties}
+      aria-label={photo.title || '未命名照片'}
+      aria-pressed={selectMode ? selected : undefined}
+    >
+      {!loaded && !failed && <div className="skeleton absolute inset-0" />}
 
-      {/* 选择模式勾选 */}
-      {selectMode && (
-        <div
-          className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-            selected
-              ? 'bg-[var(--accent)] border-[var(--accent)] text-white'
-              : 'border-white/70 bg-black/20'
-          }`}
-        >
-          {selected && (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7l3.5 3.5L12 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
+      {failed ? (
+        <div className="absolute inset-0 grid place-items-center bg-[var(--field-bg)] text-subtle">
+          <Icon name="image" size={26} strokeWidth={1.4} />
         </div>
+      ) : (
+        <img
+          ref={imgRef}
+          src={url}
+          alt={photo.title || ''}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setFailed(true);
+            setLoaded(true);
+          }}
+          className={`photo-media ${loaded ? 'is-loaded' : ''}`}
+        />
       )}
 
-      {/* 可见性标签 */}
+      <div className="photo-scrim" aria-hidden="true" />
+
+      <div className="photo-meta">
+        <p className="truncate text-[13px] font-medium leading-snug">{photo.title || '未命名'}</p>
+        <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/70">
+          <span className="truncate">{photo.category || '其他'}</span>
+          {photo.username && (
+            <>
+              <span className="opacity-50">·</span>
+              <span className="truncate">@{photo.username}</span>
+            </>
+          )}
+        </p>
+      </div>
+
       {showVisibility && photo.visibility === 'private' && (
-        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/50 text-white text-[10px] backdrop-blur-sm">
+        <span className="photo-badge">
+          <Icon name="lock" size={10} strokeWidth={2} />
           私有
-        </div>
+        </span>
+      )}
+
+      {selectMode && (
+        <span className="photo-check" data-selected={selected} aria-hidden="true">
+          {selected && <Icon name="check" size={14} strokeWidth={2.4} />}
+        </span>
       )}
     </div>
   );
